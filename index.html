@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game of Life</title>
+<style>
+#gameBoard {
+    display: grid;
+    grid-template-columns: repeat(100, 10px);
+    grid-template-rows: repeat(100, 10px);
+}
+
+.cell {
+    width: 10px;
+    height: 10px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+}
+
+.cell.alive {
+    background-color: #000;
+}
+
+button {
+    margin-top: 10px;
+}
+
+#rulesModal {
+    position: fixed;
+    left: 50%;
+    top: 10%;
+    transform: translate(-50%, -50%);
+    border: 1px solid #000;
+    background-color: #fff;
+    padding: 20px;
+    z-index: 1000;
+}
+#settingsToggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    z-index: 1001;
+    font-size: 24px; /* Adjust size as needed */
+}
+
+#settingsContainer {
+    display: none;
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(255, 255, 255, 0);
+    border: 1px solid #00000000;
+    padding: 10px;
+    z-index: 1000;
+}
+
+#controlButtons {
+    position: fixed;
+    top: 100px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+#controlButtons button {
+    background-color: transparent; /* Icon style */
+    color: black; /* Adjust as needed */
+    border: none;
+    margin: 5px 0;
+    padding: 5px;
+    font-size: 24px; /* Adjust icon size */
+}
+
+#controlButtons button.active {
+    color: blue; /* Active state color */
+    background-color: rgba(0, 0, 255, 0.1); /* Active state background */
+}
+
+#drawButton {
+    position: fixed;
+    top: 300px;
+    right: 10px;
+    z-index: 1002; /* Higher than other elements */
+}
+#generationCounter {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 1002; /* Ensure visibility over other elements */
+}
+
+#generationTimeSlider {
+    -webkit-appearance: slider-vertical; /* For Webkit browsers */
+    writing-mode: bt-lr; /* IE writing mode */
+    height: 200px;
+    position: fixed;
+    left: 10px;
+    top: calc(50% - 100px); /* Centered vertically */
+}
+
+#generationTimePopup {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1002; /* Ensure visibility over other elements */
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 5px;
+    border-radius: 5px;
+    display: none; /* Hidden by default */
+}
+#generationTimeSlider {
+    appearance: slider-vertical;
+}
+
+</style>
+</head>
+<body>
+<div id="settingsToggle">⚙️</div>
+<div id="generationCounter">Generation: 0</div>
+<div id="generationTimePopup" style="display: none;">Generation time</div>
+<input type="range" id="generationTimeSlider" orient="vertical" style="height: 200px; position: fixed; left: 10px; top: 50%;" aria-label="Generation Time Slider">
+
+
+<div id="settingsContainer">
+    <div id="rulesModal">
+        <h2>Game of Life Rules</h2>
+        <p>
+            <label for="birth">Birth (Anzahl der Nachbarn für neue Geburt):</label>
+            <input type="range" id="birth" min="0" max="8" step="1" value="3" aria-label="Birth Threshold">
+            <span id="birthValue">3</span>
+        </p>
+        <p>
+            <label for="survival">Survival (Anzahl der Nachbarn zum Überleben):</label>
+            <input type="range" id="survival" min="0" max="8" step="1" value="2" aria-label="Survival Threshold">
+            <span id="survivalValue">2</span>
+            bis
+            <input type="range" id="death" min="0" max="8" step="1" value="3" aria-label="Death Threshold">
+            <span id="deathValue">3</span>
+        </p>
+        <div>
+            <label for="seasonsToggle">Seasons:</label>
+            <input type="checkbox" id="seasonsToggle">
+        </div>
+        <div id="seasonsSettings" style="display: none;"> <!-- Corrected this line -->
+            <label for="seasonsSpeed">Seasons Speed (Generations):</label>
+            <input type="range" id="seasonsSpeed" min="1" max="100" step="1" value="20">
+            <span id="seasonsSpeedValue">20</span>
+        </div>
+
+    </div>
+</div>
+
+<div id="controlButtons">
+    <button id="playButton">▶️</button> <!-- Play icon -->
+    <button id="stopButton">⏸️</button> <!-- Pause icon -->
+    <button id="drawButton">✏️</button> <!-- Draw icon -->
+    <button id="clearButton">🗑️</button> <!-- Trashcan icon -->
+</div>
+
+<div id="gameBoard"></div>
+
+<script>
+const boardSize = 100;
+let gameBoard = Array.from({length: boardSize}, () => Array(boardSize).fill(false));
+let interval;
+
+const boardElement = document.getElementById('gameBoard');
+const playButton = document.getElementById('playButton');
+const stopButton = document.getElementById('stopButton');
+const clearButton = document.getElementById('clearButton');
+const rulesModal = document.getElementById('rulesModal');
+const birthSlider = document.getElementById('birth');
+const survivalSlider = document.getElementById('survival');
+const deathSlider = document.getElementById('death');
+const birthValue = document.getElementById('birthValue');
+const survivalValue = document.getElementById('survivalValue');
+const deathValue = document.getElementById('deathValue');
+// Define new elements
+const seasonsToggle = document.getElementById('seasonsToggle');
+const seasonsSettings = document.getElementById('seasonsSettings');
+const seasonsSpeedSlider = document.getElementById('seasonsSpeed');
+const seasonsSpeedValue = document.getElementById('seasonsSpeedValue');
+
+const sliders = [birthSlider, survivalSlider, deathSlider, seasonsSpeedSlider];
+sliders.forEach(slider => {
+    slider.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+});
+
+let birthThreshold = 3;
+let survivalThreshold = 2;
+let deathThreshold = 3;
+
+let intervalSpeedFactor = 1;
+
+function applySeasonColor(cellElement, colIndex) {
+    if (!seasonsActive) return;
+
+    const season = Math.floor(((colIndex + seasonOffset) / boardSize) * 4) % 4;
+    switch (season) {
+        case 0: // Winter
+            cellElement.style.backgroundColor = cellElement.classList.contains('alive') ? '#000' : 'rgba(173, 216, 230, 0.5)';
+            break;
+        case 1: // Spring
+            cellElement.style.backgroundColor = cellElement.classList.contains('alive') ? '#000' : 'rgba(144, 238, 144, 0.5)'; // Orange
+            break;
+        case 2: // Summer
+            cellElement.style.backgroundColor = cellElement.classList.contains('alive') ? '#000' : 'rgba(255, 255, 0, 0.5)'; // Blue
+            break;
+        case 3: // Autumn
+            cellElement.style.backgroundColor = cellElement.classList.contains('alive') ? '#000' : 'rgba(255, 165, 0, 0.5)'; // Grey
+            break;
+    }
+}
+
+function drawBoard() {
+    boardElement.innerHTML = '';
+    gameBoard.forEach((row, rowIndex) => {
+        row.forEach((cell, colIndex) => {
+            const cellElement = document.createElement('div');
+            cellElement.classList.add('cell');
+            if (cell) cellElement.classList.add('alive');
+
+            applySeasonColor(cellElement, colIndex); // Apply season color only if seasons are active
+
+            // Event listener for single cell toggle
+            cellElement.addEventListener('click', () => toggleCell(cellElement, rowIndex, colIndex));
+
+            // Event listener for drawing across multiple cells
+            cellElement.addEventListener('mouseover', (e) => handleDraw(e, cellElement, rowIndex, colIndex));
+
+            boardElement.appendChild(cellElement);
+        });
+    });
+}
+let isDrawing = false;
+
+function handleDraw(e, cellElement, x, y) {
+    if (e.buttons === 1) { // Draw if the left mouse button is pressed
+        cellElement.classList.toggle('alive');
+        gameBoard[x][y] = !gameBoard[x][y];
+        if (seasonsActive) {
+            applySeasonColor(cellElement, y); // Reapply season color if seasons are active
+        } else {
+            // Ensure standard coloring when seasons are not active
+            cellElement.style.backgroundColor = cellElement.classList.contains('alive') ? '#000' : '#fff';
+        }
+    }
+}
+
+
+function getCellCoordinates(cellElement) {
+    const cellIndex = Array.from(boardElement.children).indexOf(cellElement);
+    const x = Math.floor(cellIndex / boardSize);
+    const y = cellIndex % boardSize;
+    return { x, y };
+}
+
+document.getElementById('drawButton').addEventListener('click', () => {
+    isDrawing = !isDrawing;
+    boardElement.classList.toggle('drawingMode');
+});
+
+// Modify existing boardElement event listeners to support touch
+boardElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+boardElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+boardElement.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+function toggleCell(cellElement) {
+    const coords = getCellCoordinates(cellElement);
+    gameBoard[coords.x][coords.y] = !gameBoard[coords.x][coords.y];
+    cellElement.classList.toggle('alive');
+    if (seasonsActive) {
+        applySeasonColor(cellElement, coords.y); // Reapply season color if seasons are active
+    }
+}
+
+let seasonsActive = false;
+let seasonsSpeed = parseInt(seasonsSpeedSlider.value);
+let currentSeason = 0; // 0: Winter, 1: Spring, 2: Summer, 3: Autumn
+
+seasonsToggle.addEventListener('change', () => {
+    seasonsActive = seasonsToggle.checked;
+    seasonsSettings.style.display = seasonsActive ? 'block' : 'none';
+    currentSeason = 0; // Reset to Winter when toggled
+    drawBoard(); // Redraw the board to apply season colors immediately
+});
+
+seasonsSpeedSlider.addEventListener('input', () => {
+    seasonsSpeed = parseInt(seasonsSpeedSlider.value);
+    seasonsSpeedValue.textContent = seasonsSpeedSlider.value;
+});
+
+function applySeasons(x, y) {
+    if (!seasonsActive) return { birth: birthThreshold, survival: survivalThreshold };
+
+    const season = Math.floor(((y + seasonOffset) / boardSize) * 4) % 4; // Use y for column index and include seasonOffset
+    let adjustedBirth = birthThreshold;
+    let adjustedSurvival = survivalThreshold;
+
+    switch (season) {
+        case 0: // Winter
+            adjustedBirth = Math.max(0, adjustedBirth + 1); // Increased birth threshold, harder for a cell to be born
+            adjustedSurvival = Math.max(0, adjustedSurvival + 1); // Decreased survival threshold, easier for a cell to survive
+            break;
+        case 1: // Spring
+            adjustedBirth = Math.max(0, adjustedBirth - 2); // Decreased birth threshold, easier for a cell to be born
+            adjustedSurvival = Math.max(0, adjustedSurvival + 1);
+            break;
+        case 2: // Summer
+            adjustedSurvival = Math.min(8, adjustedSurvival - 1); // Increased survival threshold, harder for a cell to survive
+            break;
+        // Autumn has regular settings, so no change
+    }
+
+    return { birth: adjustedBirth, survival: adjustedSurvival };
+}
+
+function updateBoard() {
+    const newBoard = gameBoard.map(arr => [...arr]);
+    for (let x = 0; x < boardSize; x++) {
+        for (let y = 0; y < boardSize; y++) {
+            const { birth, survival } = applySeasons(x, y); // Use adjusted thresholds
+            const neighbors = countNeighbors(x, y);
+            const cell = gameBoard[x][y];
+            if (cell && (neighbors < survival || neighbors > deathThreshold)) {
+                newBoard[x][y] = false;
+            } else if (!cell && neighbors === birth) {
+                newBoard[x][y] = true;
+            }
+        }
+    }
+    if (seasonsActive && generation % seasonsSpeed === 0) {
+        seasonOffset = (seasonOffset + 1) % boardSize; // Move seasons
+    }
+    incrementGeneration();
+    gameBoard = newBoard;
+    drawBoard();
+}
+
+let generation = 0;
+let seasonOffset = 0;
+const generationCounter = document.getElementById('generationCounter');
+
+function updateGenerationCounter() {
+    generationCounter.textContent = 'Generation: ' + generation;
+}
+
+function incrementGeneration() {
+    generation++;
+    updateGenerationCounter();
+}
+
+clearButton.addEventListener('click', () => {
+    gameBoard = Array.from({length: boardSize}, () => Array(boardSize).fill(false));
+    drawBoard();
+    generation = 0;
+    updateGenerationCounter();
+});
+
+function countNeighbors(x, y) {
+    let count = 0;
+    for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = x + dx, ny = y + dy;
+            if (nx >= 0 && nx < boardSize && ny >= 0 && ny < boardSize && gameBoard[nx][ny]) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+playButton.addEventListener('click', () => {
+    rulesModal.style.display = 'none';
+    clearInterval(interval);
+    interval = setInterval(updateBoard, baseInterval / intervalSpeedFactor);
+    playButton.classList.add('active');
+    stopButton.classList.remove('active');
+});
+
+stopButton.addEventListener('click', () => {
+    clearInterval(interval);
+    stopButton.classList.add('active');
+    playButton.classList.remove('active');
+    rulesModal.style.display = 'block';
+});
+
+drawButton.addEventListener('click', () => {
+    isDrawing = !isDrawing;
+    drawButton.classList.toggle('active');
+});
+
+birthSlider.addEventListener('input', () => {
+    birthThreshold = parseInt(birthSlider.value);
+    birthValue.textContent = birthSlider.value;
+});
+
+survivalSlider.addEventListener('input', () => {
+    survivalThreshold = parseInt(survivalSlider.value);
+    survivalValue.textContent = survivalSlider.value;
+});
+
+deathSlider.addEventListener('input', () => {
+    deathThreshold = parseInt(deathSlider.value);
+    deathValue.textContent = deathSlider.value;
+});
+const settingsToggle = document.getElementById('settingsToggle');
+const settingsContainer = document.getElementById('settingsContainer');
+
+
+settingsToggle.addEventListener('click', () => {
+    settingsContainer.style.display = settingsContainer.style.display === 'block' ? 'none' : 'block';
+});
+
+drawBoard();
+
+const generationTimeSlider = document.getElementById('generationTimeSlider');
+const generationTimePopup = document.getElementById('generationTimePopup');
+const baseInterval = 100; // Base interval time (current speed)
+
+generationTimeSlider.addEventListener('input', () => {
+    const sliderValue = generationTimeSlider.value;
+
+    // Linear mapping: Slider value from 0-100 to a factor from 0.01 to 20
+    intervalSpeedFactor = 0.01 + (sliderValue / 100) * (20 - 0.01);
+
+    const speedPercentage = Math.round(intervalSpeedFactor * 100);
+    generationTimePopup.textContent = `Generation Time ${speedPercentage}%`;
+
+    // Show the popup message
+    generationTimePopup.style.display = 'block';
+
+    if (interval) {
+        updateInterval(); // Update the game interval based on the new speed factor
+    }
+});
+
+// Hide the popup message when the slider is not being moved
+generationTimeSlider.addEventListener('change', () => {
+    generationTimePopup.style.display = 'none';
+});
+
+function updateInterval() {
+    if (interval) {
+        clearInterval(interval);
+        interval = setInterval(updateBoard, baseInterval / intervalSpeedFactor);
+    }
+}
+
+generationTimeSlider.addEventListener('input', () => {
+    const sliderValue = generationTimeSlider.value;
+
+    // Linear mapping: Slider value from 0-100 to a factor from 0.01 to 20
+    intervalSpeedFactor = 0.01 + (sliderValue / 100) * (20 - 0.01);
+
+    const speedPercentage = Math.round(intervalSpeedFactor * 100);
+    generationTimePopup.textContent = `Generation Time ${speedPercentage}%`;
+
+    // Show the popup message
+    generationTimePopup.style.display = 'block';
+
+    if (interval) {
+        updateInterval(); // Update the game interval based on the new speed factor
+    }
+});
+
+generationTimeSlider.addEventListener('change', () => {
+    generationTimePopup.style.display = 'none';
+});
+
+// Touch event handlers for drawing
+function handleTouchStart(e) {
+    if (isDrawing) {
+        e.preventDefault(); // Prevent scrolling when drawing
+        toggleCellFromEvent(e.touches[0]);
+    }
+}
+
+function handleTouchMove(e) {
+    if (isDrawing) {
+        e.preventDefault(); // Prevent scrolling when drawing
+        toggleCellFromEvent(e.touches[0]);
+    }
+}
+
+function handleTouchEnd(e) {
+    if (isDrawing) {
+        e.preventDefault(); // Prevent unintended actions when lifting the finger
+    }
+}
+
+function toggleCellFromEvent(touch) {
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (target && target.classList.contains('cell')) {
+        const coords = getCellCoordinates(target);
+        gameBoard[coords.x][coords.y] = !gameBoard[coords.x][coords.y];
+        target.classList.toggle('alive');
+    }
+}
+
+</script>
+</body>
+</html>
+
