@@ -42,15 +42,15 @@ button {
 }
 
 #rulesModal {
-    position: fixed;
-    left: 70%;
-    top: 15%;
-    transform: translate(-50%, -50%);
-    border: 1px solid #000;
-    background-color: #fff;
-    padding: 20px;
-    z-index: 1000;
+    max-width: 600px; /* Maximale Breite des Modals */
+    width: 100%; /* Stellt sicher, dass das Modal responsiv ist */
+    margin: auto; /* Zentriert das Modal im Container */
+    background-color: #fff; /* Hintergrundfarbe des Modals */
+    padding: 20px; /* Innenabstand für das Modal */
+    border: 2px solid #000; /* Rahmen des Modals */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Schatten für das Modal */
 }
+
 #settingsToggle {
     position: fixed;
     top: 10px;
@@ -61,15 +61,19 @@ button {
 }
 
 #settingsContainer {
-    display: none;
     position: fixed;
-    top: 10px;
-    right: 10px;
-    background-color: rgba(255, 255, 255, 0);
-    border: 2px solid #00000000;
-    padding: 10px;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 20px;
     z-index: 1000;
 }
+
 
 #controlButtons {
     position: fixed;
@@ -177,9 +181,10 @@ button {
 <div id="gameBoard"></div>
 
 <script>
-const boardSize = 100;
+const boardSize = 200;
 let gameBoard = Array.from({length: boardSize}, () => Array(boardSize).fill(false));
 let interval;
+let isMouseDown = false;
 
 const boardElement = document.getElementById('gameBoard');
 const playButton = document.getElementById('playButton');
@@ -238,6 +243,7 @@ function applySeasonColor(cellElement, colIndex) {
 }
 
 function drawBoard() {
+    
     boardElement.innerHTML = '';
     gameBoard.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
@@ -256,11 +262,12 @@ function drawBoard() {
             boardElement.appendChild(cellElement);
         });
     });
+    
 }
 let isDrawing = false;
 
 function handleDraw(e, cellElement, x, y) {
-    if (e.buttons === 1) { // Draw if the left mouse button is pressed
+    if (e.buttons === 1 && (isMouseDown || e.type === 'touchmove')) { // Draw if the left mouse button is pressed
         cellElement.classList.toggle('alive');
         gameBoard[x][y] = !gameBoard[x][y];
         if (seasonsActive) {
@@ -271,7 +278,6 @@ function handleDraw(e, cellElement, x, y) {
         }
     }
 }
-
 
 function getCellCoordinates(cellElement) {
     const cellIndex = Array.from(boardElement.children).indexOf(cellElement);
@@ -438,7 +444,7 @@ settingsToggle.addEventListener('click', () => {
     settingsContainer.style.display = settingsContainer.style.display === 'block' ? 'none' : 'block';
 });
 
-drawBoard();
+
 
 const generationTimeSlider = document.getElementById('generationTimeSlider');
 const generationTimePopup = document.getElementById('generationTimePopup');
@@ -455,10 +461,11 @@ generationTimeSlider.addEventListener('input', () => {
 
     // Show the popup message
     generationTimePopup.style.display = 'block';
-
+    
     if (interval) {
         updateInterval(); // Update the game interval based on the new speed factor
     }
+       
 });
 
 // Hide the popup message when the slider is not being moved
@@ -490,10 +497,6 @@ generationTimeSlider.addEventListener('input', () => {
     }
 });
 
-generationTimeSlider.addEventListener('change', () => {
-    generationTimePopup.style.display = 'none';
-});
-
 // Touch event handlers for drawing
 function handleTouchStart(e) {
     if (isDrawing) {
@@ -515,6 +518,16 @@ function handleTouchEnd(e) {
     }
 }
 
+boardElement.addEventListener('mousedown', () => {
+    isMouseDown = true;
+});
+boardElement.addEventListener('mouseup', () => {
+    isMouseDown = false;
+});
+boardElement.addEventListener('mouseleave', () => {
+    isMouseDown = false;
+});
+
 function toggleCellFromEvent(touch) {
     if (!isDrawing) return;
 
@@ -528,6 +541,28 @@ function toggleCellFromEvent(touch) {
         }
     }
 }
+
+function adjustBoardSize() {
+    const boardElement = document.getElementById('gameBoard');
+    const cellSize = boardElement.clientWidth / boardSize;
+
+    boardElement.style.gridTemplateColumns = `repeat(${boardSize}, ${cellSize}px)`;
+    boardElement.style.gridTemplateRows = `repeat(${boardSize}, ${cellSize}px)`;
+
+    const cells = boardElement.querySelectorAll('.cell');
+    cells.forEach(cell => {
+        cell.style.width = `${cellSize}px`;
+        cell.style.height = `${cellSize}px`;
+    });
+}
+
+// Rufen Sie adjustBoardSize auf, nachdem das Spielfeld erstellt wurde
+drawBoard();
+adjustBoardSize();
+
+// Stellen Sie sicher, dass Sie adjustBoardSize auch aufrufen, wenn das Fenster neu skaliert wird
+window.addEventListener('resize', adjustBoardSize);
+
 
 </script>
 
