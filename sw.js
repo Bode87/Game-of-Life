@@ -4,8 +4,16 @@ const urlsToCache = [
   '/index.html',
   '/styles/main.css',
   '/scripts/main.js',
-  '/images/icon.png'
-  // Fügen Sie hier weitere zu cachende Ressourcen hinzu
+  // Icons hinzufügen
+  '/icon/icon-512x512.png',
+  '/icon/icon-192x192.png',
+  '/icon/icon-128x128.png',
+  '/icon/icon-120x120.png',
+  '/icon/icon-96x96.png',
+  '/icon/icon-72x72.png',
+  '/icon/favicon-32x32.png',
+  '/icon/favicon-16x16.png',
+  // Weitere Ressourcen hier hinzufügen
 ];
 
 self.addEventListener('install', event => {
