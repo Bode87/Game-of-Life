@@ -43,8 +43,8 @@ button {
 
 #rulesModal {
     position: fixed;
-    left: 50%;
-    top: 10%;
+    left: 70%;
+    top: 15%;
     transform: translate(-50%, -50%);
     border: 1px solid #000;
     background-color: #fff;
@@ -57,7 +57,7 @@ button {
     right: 10px;
     cursor: pointer;
     z-index: 1001;
-    font-size: 24px; /* Adjust size as needed */
+    font-size: 40px; /* Adjust size as needed */
 }
 
 #settingsContainer {
@@ -66,7 +66,7 @@ button {
     top: 10px;
     right: 10px;
     background-color: rgba(255, 255, 255, 0);
-    border: 1px solid #00000000;
+    border: 2px solid #00000000;
     padding: 10px;
     z-index: 1000;
 }
@@ -85,7 +85,7 @@ button {
     border: none;
     margin: 5px 0;
     padding: 5px;
-    font-size: 24px; /* Adjust icon size */
+    font-size: 40px; /* Adjust icon size */
 }
 
 #controlButtons button.active {
@@ -110,10 +110,10 @@ button {
     writing-mode: bt-lr; /* This is for Internet Explorer */
     -webkit-writing-mode: vertical-lr; /* This is for WebKit browsers like Chrome or Safari */
     writing-mode: vertical-lr; /* Standard syntax */
-    height: 200px;
+    height: 500px;
     position: fixed;
     left: 10px;
-    top: calc(50% - 100px); /* Centered vertically */
+    top: 10px; 
 }
 
 #generationTimePopup {
@@ -142,12 +142,12 @@ button {
     <div id="rulesModal">
         <h2>Game of Life Rules</h2>
         <p>
-            <label for="birth">Birth (Anzahl der Nachbarn fÃ¼r neue Geburt):</label>
+            <label for="birth">Birth (Required amount of neighbors for birth ):</label>
             <input type="range" id="birth" min="0" max="8" step="1" value="3" aria-label="Birth Threshold">
             <span id="birthValue">3</span>
         </p>
         <p>
-            <label for="survival">Survival (Anzahl der Nachbarn zum Ãberleben):</label>
+            <label for="survival">Survival (Required amount of neighbors to survive):</label>
             <input type="range" id="survival" min="0" max="8" step="1" value="2" aria-label="Survival Threshold">
             <span id="survivalValue">2</span>
             bis
@@ -159,7 +159,7 @@ button {
             <input type="checkbox" id="seasonsToggle">
         </div>
         <div id="seasonsSettings" style="display: none;"> <!-- Corrected this line -->
-            <label for="seasonsSpeed">Seasons Speed (Generations):</label>
+            <label for="seasonsSpeed">Seasons Speed (Generation):</label>
             <input type="range" id="seasonsSpeed" min="1" max="100" step="1" value="20">
             <span id="seasonsSpeedValue">20</span>
         </div>
