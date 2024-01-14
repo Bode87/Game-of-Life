@@ -5,12 +5,13 @@
 <title>Game of Life</title>
 
 <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="\GameofLife\icon\favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="\GameofLife\icon\favicon-16x16.png">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
 <meta name="msapplication-TileColor" content="#da532c">
 <meta name="theme-color" content="#ffffff">
+
 
 <style>
 #gameBoard {
@@ -100,8 +101,9 @@ button {
 }
 
 #generationTimeSlider {
-    -webkit-appearance: slider-vertical; /* For Webkit browsers */
-    writing-mode: bt-lr; /* IE writing mode */
+    writing-mode: bt-lr; /* This is for Internet Explorer */
+    -webkit-writing-mode: vertical-lr; /* This is for WebKit browsers like Chrome or Safari */
+    writing-mode: vertical-lr; /* Standard syntax */
     height: 200px;
     position: fixed;
     left: 10px;
@@ -119,9 +121,7 @@ button {
     border-radius: 5px;
     display: none; /* Hidden by default */
 }
-#generationTimeSlider {
-    appearance: slider-vertical;
-}
+
 
 </style>
 </head>
@@ -510,6 +510,8 @@ function handleTouchEnd(e) {
 }
 
 function toggleCellFromEvent(touch) {
+    if (!isDrawing) return; // Add this line to check if drawing mode is active
+
     const target = document.elementFromPoint(touch.clientX, touch.clientY);
     if (target && target.classList.contains('cell')) {
         const coords = getCellCoordinates(target);
