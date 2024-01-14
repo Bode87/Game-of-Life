@@ -181,7 +181,7 @@ button {
 <div id="gameBoard"></div>
 
 <script>
-const boardSize = 100;
+const boardSize = 300;
 let gameBoard = Array.from({length: boardSize}, () => Array(boardSize).fill(false));
 let interval;
 let isMouseDown = false;
@@ -542,27 +542,7 @@ function toggleCellFromEvent(touch) {
     }
 }
 
-function adjustBoardSize() {
-    const boardElement = document.getElementById('gameBoard');
-    const cellSize = boardElement.clientWidth / boardSize;
-
-    boardElement.style.gridTemplateColumns = `repeat(${boardSize}, ${cellSize}px)`;
-    boardElement.style.gridTemplateRows = `repeat(${boardSize}, ${cellSize}px)`;
-
-    const cells = boardElement.querySelectorAll('.cell');
-    cells.forEach(cell => {
-        cell.style.width = `${cellSize}px`;
-        cell.style.height = `${cellSize}px`;
-    });
-}
-
-// Rufen Sie adjustBoardSize auf, nachdem das Spielfeld erstellt wurde
 drawBoard();
-adjustBoardSize();
-
-// Stellen Sie sicher, dass Sie adjustBoardSize auch aufrufen, wenn das Fenster neu skaliert wird
-window.addEventListener('resize', adjustBoardSize);
-
 
 </script>
 
