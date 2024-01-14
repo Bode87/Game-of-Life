@@ -142,12 +142,12 @@ button {
     <div id="rulesModal">
         <h2>Game of Life Rules</h2>
         <p>
-            <label for="birth">Birth (Anzahl der Nachbarn für neue Geburt):</label>
+            <label for="birth">Birth (Anzahl der Nachbarn fÃ¼r neue Geburt):</label>
             <input type="range" id="birth" min="0" max="8" step="1" value="3" aria-label="Birth Threshold">
             <span id="birthValue">3</span>
         </p>
         <p>
-            <label for="survival">Survival (Anzahl der Nachbarn zum Überleben):</label>
+            <label for="survival">Survival (Anzahl der Nachbarn zum Ãberleben):</label>
             <input type="range" id="survival" min="0" max="8" step="1" value="2" aria-label="Survival Threshold">
             <span id="survivalValue">2</span>
             bis
@@ -170,7 +170,7 @@ button {
 <div id="controlButtons">
     <button id="playButton">▶️</button> <!-- Play icon -->
     <button id="stopButton">⏸️</button> <!-- Pause icon -->
-    <button id="drawButton">✏️</button> <!-- Draw icon -->
+    <button id="drawButton">🎨</button> <!-- Draw icon -->
     <button id="clearButton">🗑️</button> <!-- Trashcan icon -->
 </div>
 
@@ -180,7 +180,6 @@ button {
 const boardSize = 100;
 let gameBoard = Array.from({length: boardSize}, () => Array(boardSize).fill(false));
 let interval;
-let isDrawing = false;
 
 const boardElement = document.getElementById('gameBoard');
 const playButton = document.getElementById('playButton');
@@ -258,11 +257,18 @@ function drawBoard() {
         });
     });
 }
-
+let isDrawing = false;
 
 function handleDraw(e, cellElement, x, y) {
-    if (isDrawing) { // Modified to check isDrawing instead of mouse buttons
-        toggleCell(cellElement, x, y);
+    if (e.buttons === 1) { // Draw if the left mouse button is pressed
+        cellElement.classList.toggle('alive');
+        gameBoard[x][y] = !gameBoard[x][y];
+        if (seasonsActive) {
+            applySeasonColor(cellElement, y); // Reapply season color if seasons are active
+        } else {
+            // Ensure standard coloring when seasons are not active
+            cellElement.style.backgroundColor = cellElement.classList.contains('alive') ? '#000' : '#fff';
+        }
     }
 }
 
@@ -276,17 +282,7 @@ function getCellCoordinates(cellElement) {
 
 document.getElementById('drawButton').addEventListener('click', () => {
     isDrawing = !isDrawing;
-    drawButton.classList.toggle('active');
-    // Add or remove touch event listeners based on isDrawing state
-    if (isDrawing) {
-        boardElement.addEventListener('touchstart', handleTouchStart, { passive: false });
-        boardElement.addEventListener('touchmove', handleTouchMove, { passive: false });
-        boardElement.addEventListener('touchend', handleTouchEnd, { passive: false });
-    } else {
-        boardElement.removeEventListener('touchstart', handleTouchStart);
-        boardElement.removeEventListener('touchmove', handleTouchMove);
-        boardElement.removeEventListener('touchend', handleTouchEnd);
-    }
+    boardElement.classList.toggle('drawingMode');
 });
 
 // Modify existing boardElement event listeners to support touch
@@ -294,22 +290,14 @@ boardElement.addEventListener('touchstart', handleTouchStart, { passive: false }
 boardElement.addEventListener('touchmove', handleTouchMove, { passive: false });
 boardElement.addEventListener('touchend', handleTouchEnd, { passive: false });
 
-// Function to get cell coordinates and toggle its state
-function toggleCell(cellElement, x, y) {
+function toggleCell(cellElement) {
+    const coords = getCellCoordinates(cellElement);
+    gameBoard[coords.x][coords.y] = !gameBoard[coords.x][coords.y];
     cellElement.classList.toggle('alive');
-    gameBoard[x][y] = !gameBoard[x][y];
-    applySeasonColorIfNeeded(cellElement, y);
-}
-
-function applySeasonColorIfNeeded(cellElement, colIndex) {
     if (seasonsActive) {
-        applySeasonColor(cellElement, colIndex); // Reapply season color if seasons are active
-    } else {
-        // Ensure standard coloring when seasons are not active
-        cellElement.style.backgroundColor = cellElement.classList.contains('alive') ? '#000' : '#fff';
+        applySeasonColor(cellElement, coords.y); // Reapply season color if seasons are active
     }
 }
-
 
 let seasonsActive = false;
 let seasonsSpeed = parseInt(seasonsSpeedSlider.value);
@@ -510,28 +498,20 @@ generationTimeSlider.addEventListener('change', () => {
 function handleTouchStart(e) {
     if (isDrawing) {
         e.preventDefault(); // Prevent scrolling when drawing
-        touchDraw(e.touches[0]);
+        toggleCellFromEvent(e.touches[0]);
     }
 }
 
 function handleTouchMove(e) {
     if (isDrawing) {
         e.preventDefault(); // Prevent scrolling when drawing
-        touchDraw(e.touches[0]);
+        toggleCellFromEvent(e.touches[0]);
     }
 }
 
 function handleTouchEnd(e) {
     if (isDrawing) {
         e.preventDefault(); // Prevent unintended actions when lifting the finger
-    }
-}
-
-function touchDraw(touch) {
-    const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (target && target.classList.contains('cell')) {
-        const coords = getCellCoordinates(target);
-        toggleCell(target, coords.x, coords.y);
     }
 }
 
