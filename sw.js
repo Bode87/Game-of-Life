@@ -2,8 +2,6 @@ const CACHE_NAME = 'game-of-life-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/styles/main.css',
-  '/scripts/main.js',
   // Icons hinzufügen
   '/icon/icon-512x512.png',
   '/icon/icon-192x192.png',
